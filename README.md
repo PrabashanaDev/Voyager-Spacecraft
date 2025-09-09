@@ -47,7 +47,7 @@ deactivate
 
 ---
 
-## 💡 Optional Notes
+## 💡 Optional Notes(For Contributers)
 
 - Always use the virtual environment to avoid conflicts.  
 - If you add new packages, update `requirements.txt`:
