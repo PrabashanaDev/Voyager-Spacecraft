@@ -1,41 +1,58 @@
-# Voyager-Spacecraft
+# 🚀 Voyager-Spacecraft
 
-This is a Python project for the Voyager Spacecraft simulation.  
-It uses **numpy**, **matplotlib**, and **PyQt5** for calculations, plotting, and GUI features.
+This is a Python project for simulating the Voyager Spacecraft.  
+It uses **NumPy**, **Matplotlib**, and **PyQt5** for calculations, plotting, and GUI features.
 
 ---
 
-## Requirements
+## 📋 Requirements
 
-- Python 3.13 or higher
+- Python 3.13 or higher  
 - pip (Python package manager)
 
 ---
 
-## Setup Instructions
+## ⚙️ Setup Instructions
 
-1. **Clone the repository**
+### 1. Clone the repository
 ```bash
 git clone https://github.com/your-username/Voyager-Spacecraft.git
 cd Voyager-Spacecraft
+```
 
-
-2. Create a virtual environment
+### 2. Create a virtual environment
+```bash
 python -m venv venv
+```
 
-3. Activate the virtual environment
+### 3. Activate the virtual environment
+```bash
 venv\Scripts\activate.bat
+```
 
-4. Install required packages
+### 4. Install required packages
+```bash
 pip install -r requirements.txt
+```
 
-5. Run the project
+### 5. Run the project
+```bash
 python voyager.py
+```
 
-6. Deactivate the virtual environment when done
+### 6. Deactivate the virtual environment when done
+```bash
 deactivate
+```
 
-### Optional Notes
-Always use the virtual environment to avoid conflicts.
-If you add new packages, update requirements.txt:
+---
+
+## 💡 Optional Notes
+
+- Always use the virtual environment to avoid conflicts.  
+- If you add new packages, update `requirements.txt`:
+```bash
 pip freeze > requirements.txt
+```
+
+---
