@@ -1,4 +1,3 @@
-# voyager_plot.py
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -7,15 +6,9 @@ from voyager_data import VOYAGER_EVENTS
 
 class VoyagerPlot(FigureCanvas):
     def __init__(self, parent=None, mode="3D"):
-        self.mode = mode  # "3D" or "2D"
+        self.mode = mode
         fig = Figure(figsize=(7, 7), facecolor="white")
         super().__init__(fig)
-
-        if self.mode == "3D":
-            self.ax = fig.add_subplot(111, projection="3d", facecolor="white")
-        else:
-            self.ax = fig.add_subplot(111, facecolor="#1e1e2e")
-
         self.setParent(parent)
 
         # Path arrays
@@ -30,56 +23,32 @@ class VoyagerPlot(FigureCanvas):
         self.path_z = np.linspace(self.zs[0], self.zs[-1], self.num_steps)
 
         self.current_index = 0
-        self.plot_trajectory()
 
-    def set_mode(self, mode):
-        """Switch between 3D and 2D modes"""
-        self.mode = mode
+        # Initialize plot based on mode
+        self.init_plot()
+
+    def init_plot(self):
         self.figure.clear()
         if self.mode == "3D":
             self.ax = self.figure.add_subplot(111, projection="3d", facecolor="white")
-        else:
-            self.ax = self.figure.add_subplot(111, facecolor="#1e1e2e")
-        self.plot_trajectory()
-
-    def plot_trajectory(self):
-        self.ax.clear()
-
-        # Voyager position
-        cx, cy, cz = (
-            self.path_x[self.current_index],
-            self.path_y[self.current_index],
-            self.path_z[self.current_index],
-        )
-
-        if self.mode == "3D":
-            # --- 3D Plot ---
             self.ax.plot(self.xs, self.ys, self.zs, color="blue", linestyle="--", linewidth=2, label="Voyager Path")
-
             for e in VOYAGER_EVENTS:
                 x, y, z = e["coords"]
                 self.ax.scatter(x, y, z, s=70, marker="o", color="orange")
-                self.ax.text(x, y, z, f"{e['year']}", fontsize=8, color="black")
-
-            self.ax.scatter(cx, cy, cz, s=120, marker="*", color="red", label="Voyager 1")
-
+                self.ax.text(x, y, z, f"{e['year']}", fontsize=8)
+            self.voyager_marker = self.ax.scatter([], [], [], s=120, marker="*", color="red", label="Voyager 1")
             self.ax.set_title("Voyager 1 Path (3D)", fontsize=13, pad=15)
             self.ax.set_xlabel("X (km)")
             self.ax.set_ylabel("Y (km)")
             self.ax.set_zlabel("Z (km)")
             self.ax.legend()
-
         else:
-            # --- 2D Plot ---
+            self.ax = self.figure.add_subplot(111, facecolor="#1e1e2e")
             self.ax.plot(self.xs, self.ys, color="#3c82f6", linestyle="--", linewidth=2)
-
             for e in VOYAGER_EVENTS:
                 x, y, _ = e["coords"]
                 self.ax.scatter(x, y, s=60, color="#ffb703")
-                self.ax.text(x, y, f"{e['year']}", fontsize=8, color="white")
-
-            self.ax.scatter(cx, cy, s=120, marker="*", color="#00f5d4")
-
+            self.voyager_marker = self.ax.scatter([], [], s=120, marker="*", color="#00f5d4")
             self.ax.set_title("Top-Down XY Projection", color="white", fontsize=12, pad=10)
             self.ax.set_xlabel("X (km)", color="white")
             self.ax.set_ylabel("Y (km)", color="white")
@@ -87,13 +56,22 @@ class VoyagerPlot(FigureCanvas):
 
         self.draw()
 
+    def set_mode(self, mode):
+        self.mode = mode
+        self.init_plot()
+
+    def plot_trajectory(self):
+        # Update Voyager marker
+        cx, cy, cz = self.path_x[self.current_index], self.path_y[self.current_index], self.path_z[self.current_index]
+        if self.mode == "3D":
+            self.voyager_marker._offsets3d = ([cx], [cy], [cz])
+        else:
+            self.voyager_marker.set_offsets([[cx, cy]])
+        self.draw()
+
     def move_forward(self):
         self.current_index = (self.current_index + 1) % self.num_steps
         self.plot_trajectory()
 
     def get_current_position(self):
-        return (
-            self.path_x[self.current_index],
-            self.path_y[self.current_index],
-            self.path_z[self.current_index],
-        )
+        return self.path_x[self.current_index], self.path_y[self.current_index], self.path_z[self.current_index]
