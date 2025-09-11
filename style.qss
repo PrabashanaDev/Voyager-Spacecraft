@@ -1,0 +1,47 @@
+/* style.qss - Voyager UI Theme */
+
+QMainWindow {
+    background-color: #1e1e2e;
+    color: #ffffff;
+}
+
+QLabel {
+    font-size: 14px;
+    color: #e0e0e0;
+}
+
+QListWidget {
+    background-color: #2b2b3c;
+    color: #ffffff;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 13px;
+}
+
+QListWidget::item {
+    padding: 6px;
+}
+
+QListWidget::item:selected {
+    background-color: #3c82f6;
+    color: white;
+    border-radius: 6px;
+}
+
+QPushButton {
+    background-color: #3c82f6;
+    border: none;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+QPushButton:hover {
+    background-color: #5590f7;
+}
+
+QPushButton:pressed {
+    background-color: #2a64c4;
+}
