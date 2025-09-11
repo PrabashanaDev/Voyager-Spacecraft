@@ -1,156 +1,113 @@
-# main.py
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QListWidget, QLabel, QComboBox, QPushButton, QLineEdit, QMessageBox
-)
-from PyQt5.QtCore import QTimer
-import sys
-import numpy as np
-from voyager_plot import VoyagerPlot
+import tkinter as tk
+from tkinter import ttk, messagebox
 from voyager_data import VOYAGER_EVENTS
+from voyager_plot import plot_voyager
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("🚀 Voyager 1 Interactive Path Viewer")
-        self.setMinimumSize(1000, 600)
+# === Dark Theme Colors ===
+BG_COLOR = "#121212"
+FG_COLOR = "#e0e0e0"
+ACCENT_COLOR = "#00bcd4"
+HIGHLIGHT_COLOR = "#ff9800"
 
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        layout = QHBoxLayout()
-        central_widget.setLayout(layout)
+def search_event():
+    year = year_entry.get()
+    if not year.isdigit():
+        messagebox.showwarning("Warning", "Please enter a valid year.")
+        return
 
-        # Left: plot
-        self.plot_widget = VoyagerPlot(self)
-        layout.addWidget(self.plot_widget, 2)
-
-        # Right panel
-        right_panel = QVBoxLayout()
-
-        # View selector
-        self.view_selector = QComboBox()
-        self.view_selector.addItems(["3D View", "2D View"])
-        self.view_selector.currentIndexChanged.connect(self.change_view)
-
-        # Event list
-        self.event_list = QListWidget()
-        for e in VOYAGER_EVENTS:
-            self.event_list.addItem(f"{e['year']} - {e['event']}")
-        self.event_list.itemClicked.connect(self.event_selected)
-
-        # Search
-        self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Enter Year (e.g., 1990)")
-        self.search_btn = QPushButton("🔍 Search Year")
-        self.search_btn.clicked.connect(self.search_year)
-
-        # Details
-        self.details_label = QLabel("Voyager is moving...\nEvents update automatically.")
-        self.details_label.setWordWrap(True)
-
-        # Buttons
-        self.start_btn = QPushButton("▶ Start")
-        self.stop_btn = QPushButton("⏸ Pause")
-        self.reset_btn = QPushButton("⏮ Reset")
-        self.start_btn.clicked.connect(self.start_animation)
-        self.stop_btn.clicked.connect(self.stop_animation)
-        self.reset_btn.clicked.connect(self.reset_animation)
-
-        # Layout right panel
-        right_panel.addWidget(QLabel("View Mode:"))
-        right_panel.addWidget(self.view_selector)
-        right_panel.addWidget(QLabel("Mission Events:"))
-        right_panel.addWidget(self.event_list)
-        right_panel.addWidget(QLabel("Details:"))
-        right_panel.addWidget(self.details_label)
-        right_panel.addWidget(self.start_btn)
-        right_panel.addWidget(self.stop_btn)
-        right_panel.addWidget(self.reset_btn)
-        right_panel.addWidget(QLabel("Search Voyager by Year:"))
-        right_panel.addWidget(self.search_input)
-        right_panel.addWidget(self.search_btn)
-        right_panel.addStretch()
-        layout.addLayout(right_panel, 1)
-
-        # Timer
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.animate_voyager)
-        self.timer.start(200)
-
-    # === Controls ===
-    def start_animation(self): self.timer.start(200)
-    def stop_animation(self): self.timer.stop()
-    def reset_animation(self):
-        self.plot_widget.current_index = 0
-        self.plot_widget.plot_trajectory()
-
-    def animate_voyager(self):
-        self.plot_widget.move_forward()
-        x, y, z = self.plot_widget.get_current_position()
-        for e in VOYAGER_EVENTS:
-            ex, ey, ez = e["coords"]
-            dist = np.sqrt((x-ex)**2 + (y-ey)**2 + (z-ez)**2)
-            if dist < 1e9:
-                self.details_label.setText(
-                    f"Year: {e['year']}\nEvent: {e['event']}\nPosition: ({x:.2e}, {y:.2e}, {z:.2e}) km"
-                )
-                return
-        self.details_label.setText(f"Voyager position:\n({x:.2e}, {y:.2e}, {z:.2e}) km")
-
-    # === Search ===
-    def search_year(self):
-        year_text = self.search_input.text().strip()
-        if not year_text.isdigit():
-            QMessageBox.warning(self, "Invalid Input", "Please enter a valid year (numbers only).")
+    year = int(year)
+    for event in VOYAGER_EVENTS:
+        if event["year"] == year:
+            messagebox.showinfo("Voyager Event Found",
+                                f"Year: {event['year']}\nEvent: {event['event']}\nCoords: {event['coords']}")
             return
-        year = int(year_text)
-        sorted_events = sorted(VOYAGER_EVENTS, key=lambda e: e["year"])
-        years = [e["year"] for e in sorted_events]
-        if year < years[0] or year > years[-1]:
-            QMessageBox.information(self, "No Data", f"No data available for year {year}.")
-            return
+    messagebox.showerror("Not Found", f"No data found for {year}.")
 
-        for i in range(len(sorted_events)-1):
-            y0, y1 = sorted_events[i]["year"], sorted_events[i+1]["year"]
-            if y0 <= year <= y1:
-                coords0 = np.array(sorted_events[i]["coords"])
-                coords1 = np.array(sorted_events[i+1]["coords"])
-                t = (year - y0)/(y1 - y0)
-                pos = coords0 + t*(coords1 - coords0)
-                event_before = sorted_events[i]["event"]
-                event_after = sorted_events[i+1]["event"]
-                break
+def plot_view(view="3d"):
+    year = year_entry.get()
+    highlighted = None
+    if year.isdigit():
+        year = int(year)
+        highlighted = next((e for e in VOYAGER_EVENTS if e["year"] == year), None)
+    plot_voyager(VOYAGER_EVENTS, highlighted=highlighted, view=view)
 
-        self.plot_widget.show_event(pos)
-        QMessageBox.information(
-            self,
-            f"Voyager Position - {year}",
-            f"Approximate Position for {year}:\n"
-            f"X: {pos[0]:.2e} km\n"
-            f"Y: {pos[1]:.2e} km\n"
-            f"Z: {pos[2]:.2e} km\n\n"
-            f"Between events:\n- {y0}: {event_before}\n- {y1}: {event_after}"
-        )
+# === UI Setup ===
+root = tk.Tk()
+root.title("🚀 Voyager Spacecraft Tracker")
+root.configure(bg=BG_COLOR)
 
-    # === Event click ===
-    def event_selected(self, item):
-        text = item.text()
-        year = int(text.split(" - ")[0])
-        for e in VOYAGER_EVENTS:
-            if e["year"] == year:
-                self.plot_widget.show_event(e["coords"])
-                self.details_label.setText(
-                    f"Year: {e['year']}\nEvent: {e['event']}\nPosition: {e['coords']}"
-                )
-                break
+# Title
+title_label = tk.Label(root, text="Voyager Spacecraft Tracker",
+                       font=("Arial", 16, "bold"),
+                       fg=ACCENT_COLOR, bg=BG_COLOR)
+title_label.pack(pady=10)
 
-    # === View change ===
-    def change_view(self):
-        mode = "3D" if self.view_selector.currentText()=="3D View" else "2D"
-        self.plot_widget.set_mode(mode)
+# Search
+frame = tk.Frame(root, bg=BG_COLOR)
+frame.pack(pady=10)
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec_())
+tk.Label(frame, text="Enter Year:",
+         fg=FG_COLOR, bg=BG_COLOR,
+         font=("Arial", 12)).grid(row=0, column=0, padx=5)
+
+year_entry = tk.Entry(frame, font=("Arial", 12),
+                      bg="#1e1e1e", fg=FG_COLOR,
+                      insertbackground=FG_COLOR)
+year_entry.grid(row=0, column=1, padx=5)
+
+search_button = tk.Button(frame, text="🔍 Search",
+                          command=search_event,
+                          bg=ACCENT_COLOR, fg="black",
+                          font=("Arial", 12, "bold"))
+search_button.grid(row=0, column=2, padx=5)
+
+# Plot buttons
+btn_frame = tk.Frame(root, bg=BG_COLOR)
+btn_frame.pack(pady=10)
+
+btn_2d = tk.Button(btn_frame, text="📉 Show 2D Plot",
+                   command=lambda: plot_view("2d"),
+                   bg="#333333", fg=FG_COLOR,
+                   font=("Arial", 12, "bold"))
+btn_2d.grid(row=0, column=0, padx=10)
+
+btn_3d = tk.Button(btn_frame, text="🌌 Show 3D Plot",
+                   command=lambda: plot_view("3d"),
+                   bg="#333333", fg=FG_COLOR,
+                   font=("Arial", 12, "bold"))
+btn_3d.grid(row=0, column=1, padx=10)
+
+# Data list
+tree_frame = tk.Frame(root, bg=BG_COLOR)
+tree_frame.pack(pady=10, fill="both", expand=True)
+
+columns = ("Year", "Event", "Coordinates")
+tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=10)
+
+# Style Treeview for dark mode
+style = ttk.Style()
+style.theme_use("default")
+style.configure("Treeview",
+                background="#1e1e1e",
+                foreground=FG_COLOR,
+                fieldbackground="#1e1e1e",
+                rowheight=25,
+                font=("Arial", 10))
+style.configure("Treeview.Heading",
+                background=ACCENT_COLOR,
+                foreground="black",
+                font=("Arial", 11, "bold"))
+style.map("Treeview",
+          background=[("selected", HIGHLIGHT_COLOR)],
+          foreground=[("selected", "black")])
+
+tree.pack(fill="both", expand=True)
+
+for col in columns:
+    tree.heading(col, text=col)
+    tree.column(col, anchor="center")
+
+for event in VOYAGER_EVENTS:
+    tree.insert("", "end", values=(event["year"], event["event"], event["coords"]))
+
+root.mainloop()
