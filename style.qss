@@ -1,47 +1,31 @@
-/* style.qss - Voyager UI Theme */
-
 QMainWindow {
-    background-color: #1e1e2e;
-    color: #ffffff;
+    background-color: #121212;
 }
-
 QLabel {
-    font-size: 14px;
-    color: #e0e0e0;
-}
-
-QListWidget {
-    background-color: #2b2b3c;
     color: #ffffff;
-    border: 1px solid #444;
-    border-radius: 8px;
-    padding: 6px;
     font-size: 13px;
 }
-
-QListWidget::item {
-    padding: 6px;
+QListWidget {
+    background-color: #1e1e2e;
+    color: #ffffff;
+    border: 1px solid #444;
 }
-
-QListWidget::item:selected {
-    background-color: #3c82f6;
-    color: white;
-    border-radius: 6px;
+QComboBox {
+    background-color: #1e1e2e;
+    color: #ffffff;
+    border: 1px solid #444;
+    padding: 4px;
 }
-
 QPushButton {
     background-color: #3c82f6;
-    border: none;
     color: white;
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 5px;
+    padding: 6px;
+    font-weight: bold;
 }
-
 QPushButton:hover {
-    background-color: #5590f7;
+    background-color: #5aa0f7;
 }
-
 QPushButton:pressed {
-    background-color: #2a64c4;
+    background-color: #2e65c7;
 }

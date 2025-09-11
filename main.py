@@ -1,3 +1,4 @@
+# main.py
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QListWidget, QLabel, QComboBox, QPushButton
@@ -15,40 +16,12 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Voyager 1 Interactive Path Viewer")
         self.setMinimumSize(1000, 600)
 
-        # Apply modern dark style
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #121212;
-            }
-            QLabel {
-                color: #ffffff;
-                font-size: 13px;
-            }
-            QListWidget {
-                background-color: #1e1e2e;
-                color: #ffffff;
-                border: 1px solid #444;
-            }
-            QComboBox {
-                background-color: #1e1e2e;
-                color: #ffffff;
-                border: 1px solid #444;
-                padding: 4px;
-            }
-            QPushButton {
-                background-color: #3c82f6;
-                color: white;
-                border-radius: 5px;
-                padding: 6px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #5aa0f7;
-            }
-            QPushButton:pressed {
-                background-color: #2e65c7;
-            }
-        """)
+        # Load QSS style
+        try:
+            with open("style.qss", "r") as f:
+                self.setStyleSheet(f.read())
+        except FileNotFoundError:
+            print("style.qss not found. Using default style.")
 
         # Central widget
         central_widget = QWidget()
@@ -63,17 +36,21 @@ class MainWindow(QMainWindow):
         # Right: Controls + Event List
         right_panel = QVBoxLayout()
 
+        # --- View mode selector ---
         self.view_selector = QComboBox()
         self.view_selector.addItems(["3D View", "2D View"])
         self.view_selector.currentIndexChanged.connect(self.change_view)
 
+        # --- Event list ---
         self.event_list = QListWidget()
         for e in VOYAGER_EVENTS:
             self.event_list.addItem(f"{e['year']} - {e['event']}")
 
+        # --- Details label ---
         self.details_label = QLabel("Voyager is moving...\nEvents update automatically.")
         self.details_label.setWordWrap(True)
 
+        # --- Buttons ---
         self.start_btn = QPushButton("▶ Start")
         self.stop_btn = QPushButton("⏸ Pause")
         self.reset_btn = QPushButton("⏮ Reset")
@@ -134,6 +111,7 @@ class MainWindow(QMainWindow):
                 )
                 return
 
+        # Otherwise show current position
         self.details_label.setText(
             f"Voyager position:\n({x:.2e}, {y:.2e}, {z:.2e}) km"
         )
