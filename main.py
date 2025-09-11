@@ -1,121 +1,70 @@
-# main.py
+import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QListWidget, QLabel, QComboBox, QPushButton
+    QListWidget, QLabel, QPushButton, QStackedWidget
 )
 from PyQt5.QtCore import QTimer
-import sys
-import numpy as np
-from voyager_plot import VoyagerPlot
+from voyager_plot import VoyagerPlot2D, VoyagerPlot3D
 from voyager_data import VOYAGER_EVENTS
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Voyager 1 Interactive Path Viewer")
-        self.setMinimumSize(1000, 600)
+        self.setWindowTitle("Voyager Tracker")
+        self.resize(1000, 600)
 
-        # Load QSS style
-        try:
-            with open("style.qss", "r") as f:
-                self.setStyleSheet(f.read())
-        except FileNotFoundError:
-            print("style.qss not found. Using default style.")
-
-        # Central widget
+        # Central layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        layout = QHBoxLayout()
-        central_widget.setLayout(layout)
+        main_layout = QHBoxLayout()
+        central_widget.setLayout(main_layout)
 
-        # Left: Plot
-        self.plot_widget = VoyagerPlot(self, mode="3D")
-        layout.addWidget(self.plot_widget, 2)
+        # Left: Stacked widget for plots
+        self.plot_stack = QStackedWidget()
+        self.plot2d = VoyagerPlot2D(self)
+        self.plot3d = VoyagerPlot3D(self)
+        self.plot_stack.addWidget(self.plot2d)
+        self.plot_stack.addWidget(self.plot3d)
+        main_layout.addWidget(self.plot_stack, 2)
 
-        # Right: Controls + Event List
+        # Right: Controls and details
         right_panel = QVBoxLayout()
 
-        # --- View mode selector ---
-        self.view_selector = QComboBox()
-        self.view_selector.addItems(["3D View", "2D View"])
-        self.view_selector.currentIndexChanged.connect(self.change_view)
-
-        # --- Event list ---
         self.event_list = QListWidget()
-        for e in VOYAGER_EVENTS:
-            self.event_list.addItem(f"{e['year']} - {e['event']}")
+        for e in VOYAGER_EVENTS["Date"].head(20):  # show first 20 times
+            self.event_list.addItem(str(e))
 
-        # --- Details label ---
-        self.details_label = QLabel("Voyager is moving...\nEvents update automatically.")
+        self.details_label = QLabel("Voyager moving...\nDetails update automatically.")
         self.details_label.setWordWrap(True)
 
-        # --- Buttons ---
-        self.start_btn = QPushButton("▶ Start")
-        self.stop_btn = QPushButton("⏸ Pause")
-        self.reset_btn = QPushButton("⏮ Reset")
+        # Buttons
+        self.btn_2d = QPushButton("Switch to 2D")
+        self.btn_3d = QPushButton("Switch to 3D")
+        self.btn_2d.clicked.connect(lambda: self.plot_stack.setCurrentWidget(self.plot2d))
+        self.btn_3d.clicked.connect(lambda: self.plot_stack.setCurrentWidget(self.plot3d))
 
-        self.start_btn.clicked.connect(self.start_animation)
-        self.stop_btn.clicked.connect(self.stop_animation)
-        self.reset_btn.clicked.connect(self.reset_animation)
-
-        # Add widgets to right panel
-        right_panel.addWidget(QLabel("View Mode:"))
-        right_panel.addWidget(self.view_selector)
-        right_panel.addWidget(QLabel("Mission Events:"))
+        right_panel.addWidget(QLabel("Voyager Events:"))
         right_panel.addWidget(self.event_list)
+        right_panel.addWidget(self.btn_2d)
+        right_panel.addWidget(self.btn_3d)
         right_panel.addWidget(QLabel("Details:"))
         right_panel.addWidget(self.details_label)
-        right_panel.addWidget(self.start_btn)
-        right_panel.addWidget(self.stop_btn)
-        right_panel.addWidget(self.reset_btn)
         right_panel.addStretch()
-
-        layout.addLayout(right_panel, 1)
+        main_layout.addLayout(right_panel, 1)
 
         # Timer for animation
         self.timer = QTimer()
         self.timer.timeout.connect(self.animate_voyager)
-        self.timer.start(200)
+        self.timer.start(100)  # adjust speed
 
-    # --- Button actions ---
-    def start_animation(self):
-        self.timer.start(200)
-
-    def stop_animation(self):
-        self.timer.stop()
-
-    def reset_animation(self):
-        self.plot_widget.current_index = 0
-        self.plot_widget.plot_trajectory()
-
-    # --- View change ---
-    def change_view(self):
-        mode = "3D" if self.view_selector.currentText() == "3D View" else "2D"
-        self.plot_widget.set_mode(mode)
-
-    # --- Animation updates ---
     def animate_voyager(self):
-        self.plot_widget.move_forward()
-        x, y, z = self.plot_widget.get_current_position()
-
-        # Check if near event
-        for e in VOYAGER_EVENTS:
-            ex, ey, ez = e["coords"]
-            dist = np.sqrt((x - ex) ** 2 + (y - ey) ** 2 + (z - ez) ** 2)
-            if dist < 1e9:
-                self.details_label.setText(
-                    f"Year: {e['year']}\n"
-                    f"Event: {e['event']}\n"
-                    f"Position: ({x:.2e}, {y:.2e}, {z:.2e}) km"
-                )
-                return
-
-        # Otherwise show current position
-        self.details_label.setText(
-            f"Voyager position:\n({x:.2e}, {y:.2e}, {z:.2e}) km"
-        )
-
+        # Move both plots
+        self.plot2d.move_forward()
+        self.plot3d.move_forward()
+        # Update details for active plot
+        current_plot = self.plot_stack.currentWidget()
+        date, delta = current_plot.get_current_position()
+        self.details_label.setText(f"Date: {date}\nDistance: {delta:.2e} km")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
